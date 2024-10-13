@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바운스 볼 게임</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 2px solid black;
+        }
+        #gameOverMessage {
+            position: absolute;
+            font-size: 24px;
+            color: red;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bounceCanvas"></canvas>
+    <div id="gameOverMessage">게임 오버! 스페이스 바를 눌러 다시 시작하세요.</div>
+    <script>
+        const canvas = document.getElementById('bounceCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameOverMessage = document.getElementById('gameOverMessage');
+        canvas.width = 400;
+        canvas.height = 400;
+        
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 20,
+            dx: 2,
+            dy: 0,
+            gravity: 0.5,
+            bounce: 0.7,
+            jumpStrength: -10
+        };
+
+        const obstacle = {
+            x: 0,
+            y: canvas.height - 50,  // 장애물의 Y 좌표 (바닥에서 50px 위에 위치)
+            width: 50,
+            height: 10,
+            speed: 3
+        };
+
+        let isGameOver = false;
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff5722';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawObstacle() {
+            ctx.beginPath();
+            ctx.rect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            ctx.fillStyle = '#000';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function updateBall() {
+            if (isGameOver) return;
+
+            ball.dy += ball.gravity;
+            ball.y += ball.dy;
+
+            // 바닥에 닿으면 게임 오버
+            if (ball.y + ball.radius >= canvas.height) {
+                ball.y = canvas.height - ball.radius;
+                endGame();
+            }
+
+            // 좌우 벽과 충돌 시 방향 반전
+            if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+                ball.dx *= -1;
+            }
+
+            // 중력에 의해 바닥으로 떨어지기
+            ball.x += ball.dx;
+        }
+
+        function updateObstacle() {
+            obstacle.x += obstacle.speed;
+
+            // 장애물이 화면을 벗어나면 반대쪽에서 다시 등장
+            if (obstacle.x + obstacle.width > canvas.width || obstacle.x < 0) {
+                obstacle.speed *= -1;
+            }
+        }
+
+        function checkCollision() {
+            // 공과 장애물의 충돌 감지
+            if (
+                ball.x + ball.radius > obstacle.x &&
+                ball.x - ball.radius < obstacle.x + obstacle.width &&
+                ball.y + ball.radius > obstacle.y
+            ) {
+                endGame();
+            }
+        }
+
+        function animate() {
+            if (!isGameOver) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBall();
+                drawObstacle();
+                updateBall();
+                updateObstacle();
+                checkCollision();
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // 스페이스 바를 누르면 공이 튀어오름
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space') {
+                if (isGameOver) {
+                    resetGame();
+                } else {
+                    ball.dy = ball.jumpStrength;
+                }
+            }
+        });
+
+        function endGame() {
+            isGameOver = true;
+            gameOverMessage.style.display = 'block';
+        }
+
+        function resetGame() {
+            isGameOver = false;
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dy = 0;
+            obstacle.x = 0;
+            gameOverMessage.style.display = 'none';
+        }
+
+        animate();
+    </script>
+</body>
+</html>
